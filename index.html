@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Sınav Portalı</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      padding-bottom: 80px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .menu-container, .quiz-container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      width: 100%;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .menu-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: left;
+      cursor: pointer;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+    }
+
+    .menu-btn.locked {
+      background: linear-gradient(135deg, #6c757d, #495057);
+      cursor: not-allowed;
+      order: 999;
+      opacity: 0.85;
+    }
+
+    .quiz-container {
+      display: none;
+      position: relative;
+      padding-top: 85px;
+      min-height: 100vh;
+    }
+
+    .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 6px;
+      background: #28a745;
+      transition: 0.3s;
+      width: 0%;
+      border-radius: 14px 14px 0 0;
+    }
+
+    .main-menu-btn {
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: calc(1rem + 4pt);
+      color: #333;
+      padding: 5px 0;
+    }
+
+    .header-info {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding-right: 110px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+      flex: 1;
+      flex-wrap: wrap;
+    }
+
+    .header-subject {
+      font-weight: normal;
+      color: #777;
+      font-size: 0.95rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .retry-badge {
+      display: none;
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffe69c;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+
+    .question-title {
+      margin-top: 0;
+      margin-bottom: 16px;
+      line-height: 1.45;
+      font-size: 1.2rem;
+      color: #222;
+    }
+
+    .option-btn {
+      width: 100%;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      border: 2px solid #e9ecef;
+      background: #f8f9fa;
+      text-align: left;
+      cursor: pointer;
+      font-size: 1.05rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+      position: relative;
+    }
+
+    .option-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+
+    .option-btn:disabled {
+      cursor: default;
+    }
+
+    .option-btn.correct {
+      background: #d4edda !important;
+      border-color: #28a745 !important;
+      color: #155724 !important;
+      font-weight: bold;
+    }
+
+    .option-btn.wrong {
+      background: #f8d7da !important;
+      border-color: #dc3545 !important;
+      color: #721c24 !important;
+      font-weight: bold;
+    }
+
+    .tick {
+      display: inline-block;
+      margin-left: 10px;
+      color: #1f9d45;
+      font-weight: bold;
+      opacity: 0;
+      transform: scale(0.4);
+    }
+
+    .tick.show {
+      animation: popTick 0.45s ease forwards;
+    }
+
+    @keyframes popTick {
+      0%   { opacity: 0; transform: scale(0.4); }
+      60%  { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .explanation {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background: #eaf2f8;
+      border-left: 5px solid #2980b9;
+      border-radius: 8px;
+      line-height: 1.5;
+    }
+
+    .nav-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 25px;
+    }
+
+    .nav-btn {
+      flex: 1;
+      padding: 18px;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .next-btn { background: #007bff; }
+    .prev-btn {
+      background: #e9ecef;
+      color: #dc3545 !important;
+      border: 1px solid #ddd;
+    }
+
+    .quiz-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+      color: #666;
+      font-weight: bold;
+      font-size: 0.9rem;
+      flex-wrap: wrap;
+    }
+
+    .disclaimer-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fdfdfd;
+      border: 1px solid #eee;
+      border-radius: 10px;
+      color: #888;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .disclaimer-title {
+      display: block;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+    }
+
+    .source-tag {
+      position: fixed;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(0, 0, 0, 0.05);
+      color: #777;
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: bold;
+      z-index: 9999;
+    }
+
+    .reset-set-btn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: #ffc107;
+      border: none;
+      padding: 8px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 0.8rem;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    @media (max-width: 480px) {
+      .quiz-container {
+        padding-top: 110px;
+      }
+
+      .header-info {
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        padding-right: 104px;
+        align-items: flex-start;
+      }
+
+      .header-left {
+        display: block;
+        padding-right: 6px;
+      }
+
+      .main-menu-btn {
+        display: block;
+        font-size: 0.95rem;
+        padding: 0;
+        margin-bottom: 6px;
+      }
+
+      .header-subject {
+        display: block;
+        margin: 0;
+        font-size: 0.82rem;
+        line-height: 1.3;
+        max-width: 100%;
+      }
+
+      .question-title {
+        font-size: 1.05rem;
+      }
+
+      .option-btn {
+        font-size: 1rem;
+        padding: 14px;
+      }
+
+      .reset-set-btn {
+        top: 12px;
+        right: 12px;
+        font-size: 0.75rem;
+        padding: 7px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="menuContainer" class="menu-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px;">
+      <h1 id="mainTitle" style="margin:0;">Yükleniyor...</h1>
+      <button onclick="clearAllStatistics()" style="background:#dc3545; color:white; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:0.75rem;">
+        Verileri Sıfırla
+      </button>
+    </div>
+
+    <div id="menuGrid" class="menu-grid"></div>
+
+    <div class="disclaimer-box">
+      <span class="disclaimer-title">⚠️ Önemli Uyarı</span>
+      Bu sistemde yer alan içerikler yalnızca eğitim amaçlıdır. İçeriklerin kullanımından doğabilecek doğrudan veya dolaylı hiçbir sorumluluk kabul edilmez. Tüm kullanım sorumluluğu kullanıcıya aittir.
+    </div>
+  </div>
+
+  <div id="quizContainer" class="quiz-container">
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="header-info">
+      <div class="header-left">
+        <button onclick="showMenu()" class="main-menu-btn">☰ Ana Menü</button>
+        <span id="headerSubject" class="header-subject"></span>
+      </div>
+    </div>
+
+    <button onclick="resetCurrentSet()" class="reset-set-btn">Seti Sıfırla</button>
+
+    <div id="retryBadge" class="retry-badge">Yalnış cevaplanan soru</div>
+    <h2 id="questionText" class="question-title">...</h2>
+
+    <div id="optionsArea"></div>
+
+    <div class="quiz-footer">
+      <div id="footerLeft">Kalan: 0</div>
+      <div id="footerRight">0 / 0</div>
+    </div>
+
+    <div id="explanationArea" class="explanation"></div>
+
+    <div class="nav-controls">
+      <button id="prevBtn" class="nav-btn prev-btn" onclick="goBack()" style="visibility:hidden;">❮ Önceki</button>
+      <button id="nextBtn" class="nav-btn next-btn" onclick="goForward()" style="visibility:hidden;">Yeni Soru ❯</button>
+    </div>
+  </div>
+</div>
+
+<div class="source-tag" id="sourceTag">Kaynak: ...</div>
+
+<script>
+  const CURRENT_SUBJECT = "Gys Merkezi Çalışma Kitabı Yapay Zeka Sorular";
+  const SOURCE_TEXT = "Kaynak: gysmerç";
+  const QUESTIONS_PER_SET = 30;
+
+  const questions = [
+  {
+    "q": "Su ürünleri yetiştiriciliğinde işletme giderlerinin en büyük kalemini oluşturan yem maliyetleri, toplam giderlerin yaklaşık olarak yüzde kaçına tekabül etmektedir?",
+    "o": [
+      "%25-35",
+      "%40-55",
+      "%60-70",
+      "%80-85"
+    ],
+    "c": 2,
+    "e": "Doğru cevap: C) %60-70<br><br>C - Metinde \"Toplam işletme giderlerinin yaklaşık %60-70'ini yem maliyetleri oluşturur\" ifadesi yer almaktadır."
+  },
+  {
+    "q": "Balıkların karasal çiftlik hayvanlarına göre Yem Değerlendirme Katsayısının (FCR) çok daha düşük ve verimli olmasının temel biyolojik nedeni aşağıdakilerden hangisidir?",
+    "o": [
+      "Karbonhidratları sindiren enzimlerinin az olması nedeniyle glikojen biriktirmeleri",
+      "Vücut sıcaklıklarını sabit tutmak için enerji harcamayan \"poikloterm\" canlılar olmaları",
+      "Proteinleri enerji kaynağı olarak kullanmalarını engelleyen protein koruyucu etkiye sahip olmaları",
+      "İskelet yapısı ve ozmotik denge için mineralleri solungaçları vasıtasıyla sudan alabilmeleri"
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) Vücut sıcaklıklarını sabit tutmak için enerji harcamayan \"poikloterm\" canlılar olmaları<br><br>B - Balıkların soğukkanlı (poikloterm) olmaları nedeniyle vücut ısısı için enerji harcamamaları, enerjiyi büyümeye yönlendirmelerini ve FCR'nin düşük olmasını sağlar."
+  },
+  {
+    "q": "Balık vücudunun kuru ağırlığının büyük bir kısmını oluşturan proteinlerin ihtiyacı, balık türlerinin beslenme alışkanlıklarına göre değişiklik gösterir. Buna göre, etçil (karnivor) balıklar ile otçul/hepçil (herbivor/omnivor) balıkların protein ihtiyacı oranları sırasıyla hangi seçenekte doğru verilmiştir?",
+    "o": [
+      "%40-55 / %25-35",
+      "%65-75 / %40-55",
+      "%25-35 / %20",
+      "%60-72 / %44-48"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) %40-55 / %25-35<br><br>A - Metindeki \"Etçil balıkların protein ihtiyacı (%40-55), otçul ve hepçil balıklara göre (%25-35) daha yüksektir\" cümlesine dayanır."
+  },
+  {
+    "q": "Yemde en az bulunan ve balığın gelişimini kendi seviyesiyle sınırlandıran esansiyel amino aside \"sınırlayıcı amino asit\" denir. Metne göre, balık yemlerinde genellikle sınırlayıcı olarak karşılaşılan iki amino asit aşağıdakilerden hangisidir?",
+    "o": [
+      "Arginin ve Histidin",
+      "Triptofan ve Valin",
+      "İzolösin ve Lösin",
+      "Lizin ve Metiyonin"
+    ],
+    "c": 3,
+    "e": "Doğru cevap: D) Lizin ve Metiyonin<br><br>D - Metinde sınırlayıcı amino asidin genellikle Lizin ve Metiyonin olduğu açıkça belirtilmiştir."
+  },
+  {
+    "q": "Balık beslemesinde yağların (lipitlerin) kullanılması, proteinlerin enerji için harcanmasını engelleyerek metabolik bir avantaj sağlar. Metinde bu duruma verilen özel isim nedir?",
+    "o": [
+      "Hipervitaminozis",
+      "Protein Koruyucu Etki",
+      "Otokataliz",
+      "Liebig'in Minimum Yasası"
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) Protein Koruyucu Etki<br><br>B - Yağların, proteinlerin enerji için kullanılmasını engellemesine \"Protein Koruyucu Etki\" denmektedir."
+  },
+  {
+    "q": "Aşağıdaki besin elementleri ve balıklardaki metabolik etkilerini doğru tanımlarıyla eşleştiriniz. I. Omega-3 (n-3) Serisi       a) Yemdeki yağlar hava ile temas ettiğinde bozulmasını ve toksik madde oluşumunu engeller. II. Omega-6 (n-6) Serisi       b) Özellikle deniz balıkları için hayati öneme sahip esansiyel yağ asitleridir (EPA ve DHA). III. Antioksidan               c) Tatlı su balıkları için hayati öneme sahip esansiyel yağ asitleridir.",
+    "o": [
+      "I-b, II-c, III-a",
+      "I-a, II-b, III-c",
+      "I-c, II-a, III-b",
+      "I-b, II-a, III-c"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) I-b, II-c, III-a<br><br>A - Metne göre Omega-3 deniz balıkları için, Omega-6 tatlı su balıkları için önemlidir. Antioksidan ise yağların oksitlenip (acılaşıp) toksik madde oluşumunu engeller (I-b, II-c, III-a)."
+  },
+  {
+    "q": "Karbonhidratlar balıklar için en ucuz enerji kaynağı olmasına rağmen, etçil balık rasyonlarında kullanım oranı belirli bir sınırı geçmemelidir. Bu sınır aşıldığında balıkta karaciğer yağlanması ve diyabet benzeri bir durum (glikojen birikimi) ortaya çıkar. Bu patolojik durumun oluşmaması için etçil balık rasyonlarında karbonhidrat oranı en fazla yüzde kaç olmalıdır?",
+    "o": [
+      "%10",
+      "%20",
+      "%35",
+      "%55"
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) %20<br><br>B - Metinde \"Etçil balık rasyonlarında karbonhidrat %20'yi geçmemelidir\" ibaresi yer almaktadır."
+  },
+  {
+    "q": "Vitaminler büyüme ve sağlık için çok az miktarlarda gereklidir ancak eksikliklerinde spesifik hastalıklar ortaya çıkar. Aşağıdaki vitamin ve eksikliğinde görülen hastalık/bozukluk eşleştirmelerinden hangisi yanlıştır ?",
+    "o": [
+      "E Vitamini - Kas distrofisi",
+      "C Vitamini - Lordozis ve skolyozis",
+      "K Vitamini - Kanın pıhtılaşmaması",
+      "A Vitamini - Kemik gelişimi bozukluğu"
+    ],
+    "c": 3,
+    "e": "Doğru cevap: D) A Vitamini - Kemik gelişimi bozukluğu<br><br>D - A vitamini görme ve deri sağlığı içindir. Kemik gelişimi bozukluğu D vitamini eksikliğinde görülür."
+  },
+  {
+    "q": "\"Fazlalığı toksik etki yapabilir ve bu duruma hipervitaminozis denir. Vücutta, karaciğer ve yağ dokuda depolanabilirler.\" Yukarıda özellikleri verilen vitamin grubu, aşağıdaki seçeneklerden hangisinde tam ve doğru olarak listelenmiştir?",
+    "o": [
+      "B Grubu ve C",
+      "A, D, E, K",
+      "B2, C, Folik Asit",
+      "EPA, DHA, B12"
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) A, D, E, K<br><br>B - Yağda eriyen vitaminler (A, D, E, K) vücutta depolanır ve fazlası hipervitaminozis yapar."
+  },
+  {
+    "q": "Yem imalatında, özellikle peletleme işlemi sırasında doğal bir bağlayıcı görevi gören besin maddesi aşağıdakilerden hangisidir?",
+    "o": [
+      "Nişasta",
+      "Soya küspesi",
+      "Ksantofil",
+      "Lignin sülfonat"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) Nişasta<br><br>A - Metindeki \"Yem imalatında nişasta doğal bir bağlayıcı görevi görür\" bilgisine dayanır. (Lignin sülfonat 3. sayfadaki bağlayıcılardandır ancak \"doğal bağlayıcı\" olarak nişasta vurgulanmıştır)."
+  },
+  {
+    "q": "Balıklar mineralleri hem yemden sindirim yoluyla hem de solungaçları vasıtasıyla doğrudan sudan alabilme yeteneğine sahiptir. Ancak bir makro mineral suda çok az bulunduğu için balık yemlerine dışarıdan takviye edilmesi zorunludur . Sözü edilen bu mineral aşağıdakilerden hangisidir?",
+    "o": [
+      "Kalsiyum (Ca)",
+      "Sodyum (Na)",
+      "Fosfor (P)",
+      "Magnezyum (Mg)"
+    ],
+    "c": 2,
+    "e": "Doğru cevap: C) Fosfor (P)<br><br>C - Metnin Önemli Not kısmında \"Fosfor suda az bulunur, bu nedenle balık yemlerinde mutlaka Fosfor takviyesi yapılmalıdır\" denmektedir."
+  },
+  {
+    "q": "Aşağıdaki kavramları doğru tanımlarıyla eşleştiriniz. I. Esansiyel Amino Asitler     a) Karbonhidratları sindiren enzimdir, balıklarda az bulunur. II. Amilaz                     b) En az bulunan amino asit seviyesinin balığın gelişimini sınırladığını belirten kuraldır. III. Liebig'in Minimum Yasası  c) Balıklar tarafından sentezlenemeyen ve yemle alınması gereken 10 temel yapıtaşıdır.",
+    "o": [
+      "I-c, II-a, III-b",
+      "I-a, II-b, III-c",
+      "I-b, II-c, III-a",
+      "I-c, II-b, III-a"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) I-c, II-a, III-b<br><br>A - Esansiyel amino asitler dışarıdan alınması gereken 10 temel yapıtaşıdır (I-c). Amilaz karbonhidratı sindiren enzimdir (II-a). Liebig Yasası büyümenin en az olan amino aside göre sınırlanmasıdır (III-b)."
+  },
+  {
+    "q": "Aşağıdakilerden hangisi balık yemlerinde mutlaka dışarıdan alınması gereken esansiyel (elzem) amino asitlerden biri değildir ? (Dikkat: Çeldiriciler metin içindeki diğer gerçek terimlerden seçilmiştir.)",
+    "o": [
+      "Valin",
+      "Histidin",
+      "İzolösin",
+      "Askorbik Asit"
+    ],
+    "c": 3,
+    "e": "Doğru cevap: D) Askorbik Asit<br><br>D - Askorbik Asit bir amino asit değil, metinde C Vitamini olarak geçen bir vitamindir. Diğerleri esansiyel amino asit listesindedir."
+  },
+  {
+    "q": "Balık yemlerinde \"altın standart\" olarak kabul edilen, yüksek protein (%60-72), mükemmel amino asit dengesi ve yüksek sindirilebilirlik sunan, aynı zamanda iştah açıcı özelliğe sahip yem ham maddesi aşağıdakilerden hangisidir?",
+    "o": [
+      "Kan Unu",
+      "Tavuk Unu",
+      "Mısır Gluteni",
+      "Balık Unu"
+    ],
+    "c": 3,
+    "e": "Doğru cevap: D) Balık Unu<br><br>D - Metinde balık ununun \"altın standart\" olduğu, %60-72 protein içerdiği ve iştah açıcı olduğu doğrudan belirtilmiştir."
+  },
+  {
+    "q": "Aşağıda verilen bitkisel ve hayvansal protein kaynakları ile ilgili eşleştirmelerden hangisi yanlıştır ?",
+    "o": [
+      "Kan Unu - Protein oranı %80-85 gibi çok yüksek olmasına rağmen amino asit dengesi (izolösin bakımından) zayıftır.",
+      "Soya Küspesi - En yaygın bitkisel proteindir, ısıl işlemle yok edilmesi gereken tripsin inhibitörü içerir.",
+      "Mısır Gluteni - Sarı renk veren pigmentler (ksantofil) içerdiğinden balık etinin rengini etkileyebilir.",
+      "Tavuk Unu - Balık ununa en iyi alternatiftir ve protein oranı balık unundan çok daha yüksek olduğu için sindirilebilirliği maksimumdur."
+    ],
+    "c": 3,
+    "e": "Doğru cevap: D) Tavuk Unu - Balık ununa en iyi alternatiftir ve protein oranı balık unundan çok daha yüksek olduğu için sindirilebilirliği maksimumdur.<br><br>D - Tavuk unu balık ununa iyi bir alternatiftir ancak metinde yağ oranının yüksek olabildiği belirtilmiştir, sindirilebilirliğinin maksimum olduğu ya da proteininin çok yüksek olduğuna dair bir bilgi yoktur. A, B ve C şıkları birebir metinde yer almaktadır."
+  },
+  {
+    "q": "Aşağıdaki yem katkı maddelerini doğru tanımlarıyla eşleştiriniz. I. Binderler (Bağlayıcılar)        a) Bağırsak florasını düzenleyerek bağışıklığı güçlendirirler. II. Pigment Maddeleri               b) Yemin suda dağılmasını önler (Örn: Lignin sülfonat). III. Probiyotik/Prebiyotik          c) Balık etine veya derisine renk vermek için kullanılır (Örn: Astaksantin).",
+    "o": [
+      "I-b, II-c, III-a",
+      "I-a, II-b, III-c",
+      "I-c, II-a, III-b",
+      "I-b, II-a, III-c"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) I-b, II-c, III-a<br><br>A - Metne göre Binderler yemin suda dağılmasını önler (I-b), Pigmentler renk verir (II-c), Probiyotikler bağırsak florasını düzenler (III-a)."
+  },
+  {
+    "q": "Yem teknolojisinde, ham maddelerin parçacık boyutunun küçültülmesi sindirilebilirliği ve pelet kalitesini artırır. Metne göre ideal öğütme boyutu aşağıdakilerden hangisinden küçük olmalıdır?",
+    "o": [
+      "0.1 mm",
+      "0.5 mm",
+      "1.0 mm",
+      "2.5 mm"
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) 0.5 mm<br><br>B - Metinde öğütmede ideal boyutun < 0.5 mm olması gerektiği açıkça belirtilmiştir."
+  },
+  {
+    "q": "Buharlı pres peletleme (geleneksel) ve ekstrüzyon (modern) yöntemleri karşılaştırıldığında, aşağıdakilerden hangisi ekstrüzyon yönteminin sağladığı avantajlardan biri değildir ?",
+    "o": [
+      "Yüksek sıcaklık (120-140 derece) ve basınç altında pişirme işlemi sayesinde nişastanın jelatinizasyonunu %90'ın üzerine çıkararak sindirilebilirliği artırması.",
+      "Ürün yoğunluğunun sadece yüksek seviyede kalmasını sağlayarak yemlerin istisnasız suda batmasını zorunlu kılması.",
+      "Yağ emme kapasitesinin yüksek olması sayesinde %30-35 yağ oranlı yemlerin üretilebilmesine imkan tanıması.",
+      "Basınç etkisiyle yemin çıkışta genleşmesi ve yoğunluğun ayarlanarak yüzen, yavaş batan veya batan yemler üretilebilmesi."
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) Ürün yoğunluğunun sadece yüksek seviyede kalmasını sağlayarak yemlerin istisnasız suda batmasını zorunlu kılması.<br><br>B - Ekstrüzyon yönteminde yoğunluk ayarlanabilir ve yüzen/yavaş batan/batan yemler üretilebilir. Sadece batan yem üreten yöntem geleneksel buharlı pres peletlemedir."
+  },
+  {
+    "q": "Yem üretim teknolojisinde \"Karıştırma\" işlemi sırasında vitamin ve minerallerin (\"Premiks\") doğrudan ana karışıma eklenmek yerine öncelikle izlenen yöntem aşağıdakilerden hangisidir?",
+    "o": [
+      "Doğrudan ekstrüzyon makinesine dökülerek yüksek basınçta pişirilmesi.",
+      "Peletleme sonrasında yağlama işlemi ile birlikte yemin dış yüzeyine püskürtülmesi.",
+      "Lignin sülfonat ile reaksiyona sokularak bağlayıcı özellik kazanmasının sağlanması.",
+      "Önce bir taşıyıcı (kepek vb.) ile karıştırılıp, daha sonra ana karışıma eklenmesi."
+    ],
+    "c": 3,
+    "e": "Doğru cevap: D) Önce bir taşıyıcı (kepek vb.) ile karıştırılıp, daha sonra ana karışıma eklenmesi.<br><br>D - Metinde vitamin ve minerallerin önce bir taşıyıcı (kepek vb.) ile karıştırılıp sonra ana karışıma eklendiği açıkça belirtilmiştir."
+  },
+  {
+    "q": "Balığa günlük verilecek yem miktarının balık biyokütlesine oranına \"Yemleme Oranı\" denir. Buna göre, balık büyüklüğü ile yemleme oranı arasındaki ilişki aşağıdakilerin hangisinde doğru ifade edilmiştir?",
+    "o": [
+      "Balık büyüdükçe, canlı ağırlığına oranla yediği yem miktarı artar.",
+      "Porsiyonluk balıklar, yavru balıklara göre vücut ağırlıklarının %10'u kadar daha fazla yem tüketirler.",
+      "Balık büyüdükçe, canlı ağırlığına oranla yediği yem miktarı azalır (Örn: yavrular %10, porsiyonluklar %1-2 yer).",
+      "Su sıcaklığı optimum sınıra yaklaştıkça balık büyüklüğünden bağımsız olarak yem tüketimi tamamen durur."
+    ],
+    "c": 2,
+    "e": "Doğru cevap: C) Balık büyüdükçe, canlı ağırlığına oranla yediği yem miktarı azalır (Örn: yavrular %10, porsiyonluklar %1-2 yer).<br><br>C - Metinde \"Balık büyüdükçe, canlı ağırlığına oranla yediği yem miktarı azalır (Yavru balıklar %10, porsiyonluklar %1-2 yer)\" cümlesi yer almaktadır."
+  },
+  {
+    "q": "Yem Değerlendirme Katsayısı (FCR), işletmenin ekonomik başarısını gösteren en temel kriterdir ve FCR değeri l'e ne kadar yakınsa verimlilik o kadar yüksek demektir. Metne göre Alabalık/Levrek ve Sazan balıkları için ideal FCR değerleri sırasıyla hangi seçenekte doğru olarak verilmiştir?",
+    "o": [
+      "0.5-0.8 / 1.0-1.2",
+      "1.5-2.0 / 2.5-3.0",
+      "1.0-1.2 / 1.5-2.0",
+      "2.0-2.5 / 1.0-1.2"
+    ],
+    "c": 2,
+    "e": "Doğru cevap: C) 1.0-1.2 / 1.5-2.0<br><br>C - Metinde \"Alabalık/Levrek için ideal FCR: 1.0-1.2 arası. Sazan için ideal FCR: 1.5-2.0 arası\" bilgisi açıkça yer almaktadır."
+  },
+  {
+    "q": "Balığın günlük yüzde (%) olarak canlı ağırlık artışını gösteren ve \"[(Ln Son Ağırlık - Ln İlk Ağırlık) / Gün Sayısı] x 100\" formülü ile hesaplanan balık besleme metriği aşağıdakilerden hangisidir?",
+    "o": [
+      "ECR (Ekonomik Dönüşüm Oranı)",
+      "FCR (Yem Değerlendirme Katsayısı)",
+      "SGR (Spesifik Büyüme Oranı)",
+      "Feeding Rate (Yemleme Oranı)"
+    ],
+    "c": 2,
+    "e": "Doğru cevap: C) SGR (Spesifik Büyüme Oranı)<br><br>C - Spesifik Büyüme Oranı (SGR), balığın günlük % olarak canlı ağırlık artışıdır ve ilgili formülle hesaplanır."
+  },
+  {
+    "q": "Yemin bozulması sonucu oluşan ve küflü yemlerden kaynaklanan en yaygın \"Sekonder Beslenme Hastalığı\" ile 1 kg balık üretmek için harcanan yemin parasal değerini gösteren \"Ekonomik Dönüşüm Oranı (ECR)\" kavramının formülü hangi seçenekte doğru olarak eşleştirilmiştir?",
+    "o": [
+      "Lipoid Liver Disease / ECR = SGR x Gün Sayısı",
+      "Aflatoksin zehirlenmesi / ECR = FCR x Yem Birim Fiyat",
+      "Kas Distrofisi / ECR = Toplam Yem / Canlı Ağırlık",
+      "Aflatoksin zehirlenmesi / ECR = (Ln Son Ağırlık - Ln İlk Ağırlık) / Yem Birim Fiyatı"
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) Aflatoksin zehirlenmesi / ECR = FCR x Yem Birim Fiyat<br><br>B - Küflü yemlerden kaynaklanan en yaygın sekonder hastalık \"Aflatoksin zehirlenmesi\"dir. ECR formülü ise metinde \"FCR x Yem Birim Fiyatı\" olarak verilmiştir."
+  },
+  {
+    "q": "Aşağıdaki vitamin veya mineral eksiklikleri ile bu eksiklikler sonucu balıklarda görülen yetersizlik hastalıklarını doğru tanımlarıyla eşleştiriniz. I. Riboflavin (B2) veya Çinko eksikliği       a) Solungaçlarda soluk renk (Anemi) II. C vitamini veya Triptofan eksikliği        b) Göz merceğinin bulanıklaşması (Katarakt) III. Demir, Folik Asit veya B12 eksikliği      c) Omurga eğriliği (Skolyoz / Lordoz)",
+    "o": [
+      "I-b, II-c, III-a",
+      "I-a, II-b, III-c",
+      "I-c, II-a, III-b",
+      "I-b, II-a, III-c"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) I-b, II-c, III-a<br><br>A - Metinde B2/Çinko eksikliği katarakta (I-b), C vitamini/Triptofan eksikliği skolyoz/lordoza (II-c), Demir/Folik Asit/B12 eksikliği ise anemiye (III-a) neden olur."
+  },
+  {
+    "q": "Balık rasyonlarında aşırı karbonhidrat kullanımı, bayat (acılaşmış) yağ kullanımı veya Kolin eksikliği durumunda aşağıdaki hastalıklardan hangisinin ortaya çıkması beklenir?",
+    "o": [
+      "Aflatoksin zehirlenmesi",
+      "Lipoid Liver Disease (Yağlı Karaciğer)",
+      "Kas Distrofisi",
+      "Hipervitaminozis"
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) Lipoid Liver Disease (Yağlı Karaciğer)<br><br>B - Metinde Yağlı Karaciğer (Lipoid Liver Disease) hastalığının nedenlerinin aşırı karbonhidrat, bayat yağ kullanımı veya Kolin eksikliği olduğu belirtilmiştir."
+  },
+  {
+    "q": "Metnin \"Notlar\" bölümünden elde edilen bilgilere göre, aşağıda verilen ifadelerden hangisi yanlıştır ?",
+    "o": [
+      "Balıklar enerji ihtiyacını öncelikle yağlardan, sonra proteinlerden karşılar; karbonhidrat kullanımı ise sınırlıdır.",
+      "Soya küspesindeki zararlı madde \"Tripsin İnhibitörü\" olup ısıyla yok edilir.",
+      "Soğuk su balıkları (Alabalık) n-6 (Omega-6) yağ asitlerine, ılık su balıkları (Sazan) ise n-3 (Omega-3) yağ asitlerine ihtiyaç duyar.",
+      "Ekstrüder yemler, sindirilebilirliği geleneksel yemlere göre daha yüksek olan ve suda yüzebilen yemlerdir."
+    ],
+    "c": 2,
+    "e": "Doğru cevap: C) Soğuk su balıkları (Alabalık) n-6 (Omega-6) yağ asitlerine, ılık su balıkları (Sazan) ise n-3 (Omega-3) yağ asitlerine ihtiyaç duyar.<br><br>C - Metindeki notlarda \"Soğuk su balıkları (Alabalık) n-3 (Omega-3) yağ asitlerine, ılık su balıkları (Sazan) n-6 (Omega-6) yağ asitlerine ihtiyaç duyar\" denmektedir. C şıkkında bu durum tam tersi (halüsinasyon tuzağı olarak) verilmiştir."
+  },
+  {
+    "q": "Balık yetiştiriciliğinde bir hastalığın ortaya çıkabilmesi için \"Hastalık Üçgeni\" olarak adlandırılan üç temel faktörün bir araya gelmesi gerekir. Metne göre bu üç faktör aşağıdakilerden hangisinde doğru ve eksiksiz olarak verilmiştir?",
+    "o": [
+      "Stres - Beslenme - Patojen",
+      "Konakçı - Patojen - Çevre",
+      "Konakçı - Sıcaklık - Oksijen",
+      "Patojen - Çevre - Elleçleme"
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) Konakçı - Patojen - Çevre<br><br>B - Metinde hastalık üçgenini oluşturan faktörlerin sırasıyla \"Konakçı, Patojen ve Çevre\" olduğu belirtilmiştir."
+  },
+  {
+    "q": "Balığın savunma mekanizmasını kıran stres faktörleri fiziksel, kimyasal ve biyolojik olmak üzere sınıflandırılmaktadır. Aşağıdakilerden hangisi kimyasal stres faktörlerinden biri değildir ?",
+    "o": [
+      "Düşük oksijen seviyesi",
+      "Yüksek amonyak veya nitrit birikimi",
+      "pH değerlerindeki ani dalgalanmalar",
+      "Aşırı stok yoğunluğu"
+    ],
+    "c": 3,
+    "e": "Doğru cevap: D) Aşırı stok yoğunluğu<br><br>D - Aşırı stok yoğunluğu metinde \"Kimyasal Stres\" değil, \"Fiziksel Stres\" faktörü olarak sınıflandırılmıştır."
+  },
+  {
+    "q": "Aşağıdaki genel balık hastalığı belirtilerini doğru tanımlarıyla eşleştiriniz. I. Melanozis         a) Gözlerin dışarı fırlaması durumu. II. Ekzoftalmus      b) Balığın karın bölgesindeki şişlik (su toplaması). III. Dropsy          c) Balığın dış görünüşünde (derisinde) renk koyulaşması.",
+    "o": [
+      "I-c, II-a, III-b",
+      "I-a, II-b, III-c",
+      "I-b, II-c, III-a",
+      "I-c, II-b, III-a"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) I-c, II-a, III-b<br><br>A - Metne göre Melanozis renk koyulaşması (I-c), Ekzoftalmus göz fırlaması (II-a), Dropsy ise karın şişliğidir (III-b)."
+  },
+  {
+    "q": "Tuzlu sularda en yaygın görülen, özellikle Levrek ve Çipura gibi balıkları hedef alan, deride ve yüzgeç diplerinde kanamalar yaptığı için \"Kızıl Veba\" olarak da bilinen bakteriyel hastalık aşağıdakilerden hangisidir?",
+    "o": [
+      "Furunkulozis",
+      "Kolumnaris",
+      "Vibriozis",
+      "Yersiniosis"
+    ],
+    "c": 2,
+    "e": "Doğru cevap: C) Vibriozis<br><br>C - Tuzlu suyun en yaygın hastalığı olup \"Kızıl Veba\" olarak bilinen hastalık Vibriozis'tir."
+  },
+  {
+    "q": "Ülkemizde aşısı en yaygın olarak yapılan ve gökkuşağı alabalıklarında çene çevresi ile solungaç kapaklarında karakteristik kanamalarla kendini gösteren bakteriyel hastalık (I) ile yüksek sıcaklıklarda tetiklenen, sırtta eyer şeklinde beyaz/gri lezyonlar yapan hastalık (II) sırasıyla hangi seçenekte doğru verilmiştir?",
+    "o": [
+      "(I) Vibriozis - (II) Furunkulozis",
+      "(I) Kızıl Ağız (ERM) - (II) Kolumnaris",
+      "(I) Bakteriyel Böbrek Hastalığı (BKD) - (II) Saprolegnia",
+      "(I) Kolumnaris - (II) Kızıl Ağız (ERM)"
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) (I) Kızıl Ağız (ERM) - (II) Kolumnaris<br><br>B - Çene çevresi kanaması (Kızıl Ağız) yapan Yersiniosis (ERM)'dir. Sırtta eyer şekli yapan ise Kolumnaris'tir."
+  },
+  {
+    "q": "Viral hastalıklar (virüs kaynaklı hastalıklar) ile ilgili metinde verilen bilgilere göre aşağıdakilerden hangisi yanlıştır ?",
+    "o": [
+      "Antibiyotik tedavisi bu hastalıklarda tamamen etkisizdir.",
+      "Üreme dönemi boyunca anneden yumurtaya (vertikal) bulaşma riski taşıyan türleri vardır (Örn: IPN).",
+      "Ülkemizde ihbarı mecburi hastalıklar listesinde genellikle bakteriyel hastalıklar yer alırken, viral hastalıkların bildirimi isteğe bağlıdır.",
+      "Tek mücadele yöntemi aşılama, karantina uygulamaları ve hasta balıkların imha edilmesidir."
+    ],
+    "c": 2,
+    "e": "Doğru cevap: C) Ülkemizde ihbarı mecburi hastalıklar listesinde genellikle bakteriyel hastalıklar yer alırken, viral hastalıkların bildirimi isteğe bağlıdır.<br><br>C - Metnin 11. sayfasındaki notlarda, İhbarı Mecburi Hastalıklar listesinde genelde bakteriyel değil \"viral hastalıkların (VHS, IHN, IPN, ISA)\" yer aldığı belirtilmiştir. Bu nedenle C şıkkı yanlıştır."
+  },
+  {
+    "q": "Aşağıdaki viral balık hastalıklarını (I, II, III) doğru özellikleriyle (a, b, c) eşleştiriniz. I. VHS (Viral Hemorajik Septisemi)       a) Yavrular kendi etrafında tirbuşon gibi döner, midede şeffaf/jelimsi tıkaç oluşur. II. IHN (Infectious Hematopoietic Necrosis) b) Su sıcaklığı 14°C'nin altında iken (soğukta) patlak verir, göz fırlaması yapar. III. IPN (Infectious Pancreatic Necrosis)   c) Balıklar su yüzeyinde cansız asılır, anüs arkasında uzun dışkı ipliği görülür.",
+    "o": [
+      "I-b, II-c, III-a",
+      "I-a, II-b, III-c",
+      "I-c, II-a, III-b",
+      "I-b, II-a, III-c"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) I-b, II-c, III-a<br><br>A - Metne göre VHS 14°C altında patlak verir (I-b). IHN anüs arkasında uzun dışkı ipliği yapar (II-c). IPN yavruları tirbuşon gibi döndürür ve mukoid tıkaç yapar (III-a)."
+  },
+  {
+    "q": "Tatlı su balıklarının en yaygın paraziti olan ve balığın üzerinde tuz tanesi büyüklüğünde beyaz noktalar oluşturan \"Beyaz Benek (Ichthyophthirius)\" hastalığında, tedavi sürecinin zor olmasının temel tıbbi gerekçesi nedir?",
+    "o": [
+      "Etkenin bir virüs olması nedeniyle antibiyotiklere direnç göstermesi",
+      "Parazitin doğurarak çoğalması sebebiyle üreme hızının ilaçların etki süresini aşması",
+      "İlaçların sadece yüksek sıcaklıklarda aktif hale gelebilen kimyasallar içermesi",
+      "Parazitin balığın epidermisi (derisi) altına yerleşmiş olması ve ancak balıktan ayrılıp suya geçtiğinde ilaçtan etkilenmesi"
+    ],
+    "c": 3,
+    "e": "Doğru cevap: D) Parazitin balığın epidermisi (derisi) altına yerleşmiş olması ve ancak balıktan ayrılıp suya geçtiğinde ilaçtan etkilenmesi<br><br>D - Metnin notlarında Beyaz Benek parazitinin derinin (epidermisin) altına yerleştiği için, ilacın ancak parazit suya geçtiğinde etkili olduğu vurgulanmıştır."
+  },
+  {
+    "q": "Aşağıdaki tek veya çok hücreli parazitleri doğru özellikleriyle eşleştiriniz. I. Trichodina        a) Deri parazitidir, doğurarak (vivipar) çoğalır. II. Gyrodactylus     b) Daire testere veya UFO şeklinde görülen tek hücreli parazittir. III. Argulus         c) Gözle görülebilir (3-5 mm) balık bitidir, kan emer ve zehirli salgı bırakır.",
+    "o": [
+      "I-b, II-a, III-c",
+      "I-a, II-c, III-b",
+      "I-b, II-c, III-a",
+      "I-c, II-b, III-a"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) I-b, II-a, III-c<br><br>A - Trichodina UFO şeklinde (I-b), Gyrodactylus doğuran deri paraziti (II-a), Argulus gözle görülen balık bitidir (III-c)."
+  },
+  {
+    "q": "Balıkların derisinde veya yumurtaları üzerinde pamuk atılmış gibi beyaz/gri lifli tabakalar oluşturan ve genellikle elleçleme sırasındaki mekanik yaralanmalar sonrası \"Sekonder Enfeksiyon\" olarak ortaya çıkan mantar hastalığının etkeni aşağıdakilerden hangisidir?",
+    "o": [
+      "Lernea",
+      "Dactylogyrus",
+      "Saprolegnia",
+      "Costia"
+    ],
+    "c": 2,
+    "e": "Doğru cevap: C) Saprolegnia<br><br>C - Metinde pamukçuk benzeri yaralar yapan ve sekonder enfeksiyon olan su mantarının \"Saprolegnia\" olduğu açıkça yazılmıştır."
+  },
+  {
+    "q": "Ortam şartlarındaki bozulmalar sonucu ortaya çıkan çevresel hastalıklardan biri olan \"Gaz Kabarcığı Hastalığı\" (Gas Bubble Disease) hangi spesifik durumun sonucunda meydana gelmektedir?",
+    "o": [
+      "Sudaki azot veya oksijen gazının %105-110 üzerinde aşırı doymuş (saturasyon) olması durumunda.",
+      "Suda amonyak birikmesi sonucu solungaçların morarması durumunda.",
+      "Suyun pH değerinde aniden oluşan asidik dalgalanmalar sonucunda.",
+      "Suyun sıcaklığının aniden düşerek bağışıklık sistemini baskılaması durumunda."
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) Sudaki azot veya oksijen gazının %105-110 üzerinde aşırı doymuş (saturasyon) olması durumunda.<br><br>A - Gaz kabarcığı hastalığı, sudaki azot veya oksijenin aşırı doymuş (saturasyon > %105-110) olmasından kaynaklanır."
+  },
+  {
+    "q": "Su ürünleri yetiştiriciliğinde hastalıkların tedavisi ve dezenfeksiyon işlemleri için çeşitli kimyasallar kullanılmaktadır. Metne göre aşağıdaki kimyasal madde ve kullanım amacı eşleştirmelerinden hangisi yanlıştır ?",
+    "o": [
+      "Formalin - Dış parazitlerde ve mantarda etkilidir, ancak sudaki oksijeni düşürür.",
+      "Tuz (NaCl) - En güvenli ve ucuz dezenfektandır, balığın stresini alır.",
+      "İyot (Iodophor) - İç hastalıklar ve bakteriyel sistemik enfeksiyonlar için sadece oral (ağızdan) yolla uygulanır.",
+      "Kloramin-T - Solungaç bakterilerine (Myxobacteria) karşı etkilidir."
+    ],
+    "c": 2,
+    "e": "Doğru cevap: C) İyot (Iodophor) - İç hastalıklar ve bakteriyel sistemik enfeksiyonlar için sadece oral (ağızdan) yolla uygulanır.<br><br>C - Metinde İyot (Iodophor) kimyasalının \"Sadece yumurta dezenfeksiyonunda kullanıldığı\" belirtilmiştir. İç hastalıklarda ağızdan verilmez."
+  },
+  {
+    "q": "Metnin \"Notlar\" bölümünden ve genel bağlamından elde edilen sentezlenmiş bilgiye göre, tedavi yöntemleriyle ilgili aşağıdaki yargılardan hangisine ulaşılabilir?",
+    "o": [
+      "BKD (Bakteriyel Böbrek Hastalığı) tedavisinde antibiyotikler çok yüksek başarı oranına sahiptir.",
+      "Karantina ve itlaf (öldürme) yöntemi yalnızca solungaçlara yerleşen paraziter hastalıkların (Dactylogyrus) tedavisinde zorunludur.",
+      "Viral ensefalopati ve retinopati (VER) hastalığı bakteriyel bir enfeksiyonla birleştiğinde antibiyotiklerle kesin tedavi edilebilir.",
+      "Bakteriyel hastalıklarda (örneğin Kızıl Ağız) antibiyotik kullanılırken, ihbarı mecburi olan VHS, IHN, IPN gibi viral hastalıklarda antibiyotik kullanılmaz."
+    ],
+    "c": 3,
+    "e": "Doğru cevap: D) Bakteriyel hastalıklarda (örneğin Kızıl Ağız) antibiyotik kullanılırken, ihbarı mecburi olan VHS, IHN, IPN gibi viral hastalıklarda antibiyotik kullanılmaz.<br><br>D - Metnin notlar bölümünde \"Bakteriyel hastalıklarda antibiyotik kullanılır, Viral hastalıklarda kullanılmaz\" ifadesi yer almaktadır."
+  },
+  {
+    "q": "Özellikle deniz balıklarını (Levrek) hedef alan, kontrolsüz yüzme ve hava kesesi şişkinliği nedeniyle batamama belirtileriyle kendini gösteren, beyin ile gözde ciddi hasarlar bırakan viral hastalık (\"Sinirsel Nekroz Virüsü\") aşağıdakilerden hangisidir?",
+    "o": [
+      "VER / VNN (Viral Ensefalopati ve Retinopati)",
+      "BKD (Bakteriyel Böbrek Hastalığı)",
+      "VHS (Viral Hemorajik Septisemi)",
+      "ERM (Kızıl Ağız Hastalığı)"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) VER / VNN (Viral Ensefalopati ve Retinopati)<br><br>A - Metinde Sinirsel Nekroz Virüsü olarak bilinen, levrekleri etkileyip batamamaya yol açan hastalığın VER / VNN olduğu belirtilmiştir."
+  },
+  {
+    "q": "Su ürünleri yetiştiricilik işletmelerinde, üretim yapılıp yapılmadığına bakılmaksızın katlanılması gereken ve üretim hacmine göre değişiklik göstermeyen maliyetlere \"Sabit Masraflar\" denir. Buna göre aşağıdakilerden hangisi bir sabit masraf kalemi olarak değerlendirilir?",
+    "o": [
+      "Yavru balık alım giderleri",
+      "Hastalık tedavisinde kullanılan ilaçlar",
+      "Tesis ve kafeslerin amortisman bedelleri",
+      "Günlük verilen pelet yem maliyeti"
+    ],
+    "c": 2,
+    "e": "Doğru cevap: C) Tesis ve kafeslerin amortisman bedelleri<br><br>C - Üretime bağlı olmayan, her halükarda var olan tesis yıpranması (amortisman) sabit bir masraftır. Yavru, ilaç ve yem üretime bağlı değişken masraflardır."
+  },
+  {
+    "q": "Su ürünlerinin çabuk bozulabilir (perishable) yapısı nedeniyle aracıların riskleri fazladır. Üreticinin eline geçen fiyat ile tüketicinin ödediği nihai fiyat arasındaki bu farkı ifade eden ekonomik kavram aşağıdakilerden hangisidir?",
+    "o": [
+      "Pazarlama Marjı",
+      "Rantabilite Oranı",
+      "Brüt Kâr",
+      "Amortisman Payı"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) Pazarlama Marjı<br><br>A - Üretici ile nihai tüketici arasındaki fiyat farkına ekonomi biliminde \"Pazarlama Marjı\" denir."
+  },
+  {
+    "q": "Aşağıdaki su kalitesi parametreleri (ağır metaller) ile temel özelliklerini doğru tanımlarıyla eşleştiriniz. I. Bakır (Cu)        a) İçme suyunda en fazla 0.01 - 0.05 mg/L bulunmasına izin verilen toksik maddedir. II. Çinko (Zn)       b) Alg öldürücü olarak kullanılır ancak yüksek dozları balıklara zehirlidir. III. Kurşun (Pb)     c) Balıklar için toksisite sınırı yumuşak sularda 0.15 mg/L civarındadır.",
+    "o": [
+      "I-b, II-c, III-a",
+      "I-a, II-b, III-c",
+      "I-c, II-a, III-b",
+      "I-b, II-a, III-c"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) I-b, II-c, III-a<br><br>A - Metne göre Bakır (Cu) alg öldürücüdür (I-b), Çinko (Zn) yumuşak suda 0.15 mg/L sınırdır (II-c), Kurşun (Pb) içme suyunda 0.01-0.05 mg/L sınırındadır (III-a)."
+  },
+  {
+    "q": "Balıklar için toksisite sınırı türüne göre 28-80 mg/L gibi geniş bir aralıkta değişmesine rağmen, insan sağlığı açısından içme sularında KESİNLİKLE 0.05 mg/L sınır değerini aşmaması gereken ağır metal aşağıdakilerden hangisidir?",
+    "o": [
+      "Bor (B)",
+      "Krom (Cr)",
+      "Bakır (Cu)",
+      "Çinko (Zn)"
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) Krom (Cr)<br><br>B - Metinde balıklar için 28-80 mg/L arası, içme suyunda ise 0.05 mg/L olan ağır metalin Krom (Cr) olduğu belirtilmiştir."
+  },
+  {
+    "q": "Deterjan ve gübre kaynaklı olarak sulara karışan; tarımda sulama suyu için büyük önem taşıyan, balıklar için toksik sınırı oldukça yüksek (3-7 g/L) iken bitkiler için limit değeri çok düşük (0.7 mg/L drenaj suyunda) olan kimyasal element hangisidir?",
+    "o": [
+      "Kurşun (Pb)",
+      "Bakır (Cu)",
+      "Bor (B)",
+      "Krom (Cr)"
+    ],
+    "c": 2,
+    "e": "Doğru cevap: C) Bor (B)<br><br>C - Metinde deterjan/gübre kaynaklı olan ve bitkiler (0.7 mg/L) ile balıklar (3-7 g/L) arasında devasa toksisite sınırı farkı olan elementin Bor (B) olduğu açıkça vurgulanmıştır."
+  },
+  {
+    "q": "Mikrobiyolojik su kalitesi parametrelerinde, su ortamında kirliliğin yaşandığına dair ilk sinyalleri veren \"genel indikatör (gösterge)\" canlı grubu aşağıdakilerden hangisidir?",
+    "o": [
+      "E. coli (Escherichia coli)",
+      "Koliform Bakteriler",
+      "Myxobacteria",
+      "Aeromonas"
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) Koliform Bakteriler<br><br>B - Metinde su kirliliğinin \"indikatörü (göstergesi)\" olarak kabul edilen canlıların Koliform Bakteriler olduğu yazmaktadır."
+  },
+  {
+    "q": "Bir su kaynağında \"Koliform Bakteriler\" bulunması genel kirliliğe işaret ederken, sulara kesin olarak \"dışkı (fekal)\" karıştığının en somut ve spesifik kanıtı aşağıdakilerden hangisinin varlığıdır?",
+    "o": [
+      "E. coli (Escherichia coli)",
+      "Vibriozis etkeni bakteriler",
+      "Saprolegnia mantar sporları",
+      "Pseudomonas bakterileri"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) E. coli (Escherichia coli)<br><br>A - Dışkı (fekal) kaynaklı kirliliğin \"kesin kanıtı\" metinde E. coli (Escherichia coli) olarak belirtilmiştir."
+  },
+  {
+    "q": "Standartlara göre, insanların tüketimine sunulacak olan içme sularında 100 ml numune içerisinde bulunmasına izin verilen \"Toplam Koliform ve E. coli\" sayısı KESİN olarak kaç olmalıdır?",
+    "o": [
+      "10'dan az",
+      "5",
+      "1",
+      "0 (Sıfır)"
+    ],
+    "c": 3,
+    "e": "Doğru cevap: D) 0 (Sıfır)<br><br>D - İçme sularında 100 ml numunede Toplam Koliform ve E. coli sayısının standartlara göre tam \"0 (sıfır)\" olması gerektiği vurgulanmıştır."
+  },
+  {
+    "q": "Çinko (Zn) elementi suların sertlik derecesine göre balıklarda farklı toksisite sınırlarına sahiptir. Metne göre Çinko'nun, kalsiyum ve magnezyum iyonlarının az bulunduğu \"yumuşak sularda\" toksisite sınırı kaç mg/L'dir?",
+    "o": [
+      "0.05 mg/L",
+      "0.15 mg/L",
+      "0.3 mg/L",
+      "1.0 mg/L"
+    ],
+    "c": 1,
+    "e": "Doğru cevap: B) 0.15 mg/L<br><br>B - Çinko'nun toksisite sınırı genel olarak 0.3 mg/L, ancak \"yumuşak sularda 0.15 mg/L\" olarak metinde açıkça verilmiştir."
+  },
+  {
+    "q": "Aşağıdaki kavramları doğru bağlamlarıyla eşleştiriniz. I. Değişken Masraf      a) Tesisin ve donanımların zamana/kullanıma bağlı yıpranma payıdır. II. Amortisman          b) İşletmenin kârlılık durumunu (net kâr / sermaye) gösterir. III. Rantabilite        c) Üretim hacmiyle doğrudan artan maliyetlerdir (Yem gibi).",
+    "o": [
+      "I-c, II-a, III-b",
+      "I-a, II-b, III-c",
+      "I-b, II-c, III-a",
+      "I-c, II-b, III-a"
+    ],
+    "c": 0,
+    "e": "Doğru cevap: A) I-c, II-a, III-b<br><br>A - Değişken masraf üretime bağlıdır (I-c), Amortisman yıpranma payıdır (II-a), Rantabilite işletmenin kârlılığıdır (III-b)."
+  }
+];
+
+  document.getElementById("mainTitle").textContent = `${CURRENT_SUBJECT} Deneme Sınavı`;
+  document.getElementById("headerSubject").textContent = CURRENT_SUBJECT;
+  document.getElementById("sourceTag").textContent = SOURCE_TEXT;
+  document.title = CURRENT_SUBJECT;
+
+  if (performance.navigation.type === performance.navigation.TYPE_RELOAD || !sessionStorage.getItem("session_active")) {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+    });
+    sessionStorage.setItem("session_active", "true");
+  }
+
+  let currentQuestions = [];
+  let currentIndex = 0;
+  let solvedIndex = -1;
+  let userAnswers = {};
+  let currentSetKey = "";
+  let stats = { correct: 0, wrong: 0 };
+
+  function storagePrefix() {
+    return "exam_" + CURRENT_SUBJECT.replace(/\s+/g, "_") + "_";
+  }
+
+  function setStateKey(index) {
+    return storagePrefix() + "state_set_" + index;
+  }
+
+  function normalizeQuestion(q, originalIndex) {
+    return {
+      id: q.id || ("q_" + originalIndex + "_" + Math.random().toString(36).slice(2, 8)),
+      originalNo: originalIndex + 1,
+      q: q.q,
+      o: [...q.o],
+      c: q.c,
+      e: q.e || "",
+      isRetry: q.isRetry || false,
+      retryFrom: q.retryFrom || null,
+      retryCount: q.retryCount || 0,
+      answeredCorrectly: q.answeredCorrectly || false
+    };
+  }
+
+  function initMenu() {
+    const menuGrid = document.getElementById("menuGrid");
+    menuGrid.innerHTML = "";
+
+    const totalSets = Math.ceil(questions.length / QUESTIONS_PER_SET);
+
+    let setsPerButton = 1;
+    let buttonCount = totalSets;
+
+    if (buttonCount > 10) {
+      setsPerButton = 2;
+      buttonCount = Math.ceil(totalSets / setsPerButton);
+    }
+
+    buttonCount = Math.min(buttonCount, 10);
+
+    for (let i = 0; i < buttonCount; i++) {
+      const startSetNo = i * setsPerButton + 1;
+      const endSetNo = Math.min(startSetNo + setsPerButton - 1, totalSets);
+
+      const start = (startSetNo - 1) * QUESTIONS_PER_SET;
+      const end = Math.min(endSetNo * QUESTIONS_PER_SET, questions.length);
+
+      if (start >= questions.length) continue;
+
+      const key = setStateKey(i);
+
+      const saved = JSON.parse(localStorage.getItem(key) || "null");
+      const solved = saved ? Object.keys(saved.userAnswers || {}).length : 0;
+      const correct = saved?.stats?.correct || 0;
+      const wrong = saved?.stats?.wrong || 0;
+
+      const totalCurrent = saved?.currentQuestions?.length || (end - start);
+      const isCompleted = saved ? (solved >= totalCurrent && totalCurrent > 0) : false;
+
+      const label = startSetNo === endSetNo
+        ? `Deneme-${startSetNo}`
+        : `Deneme-${startSetNo}-${endSetNo}`;
+
+      const btn = document.createElement("button");
+      btn.className = `menu-btn ${isCompleted ? "locked" : ""}`;
+      btn.innerHTML = `
+        <strong>${label}</strong><br>
+        <small>${end - start} Soru | Çözülen ${solved} (Doğru ${correct} Yanlış ${wrong})</small>
+      `;
+
+      if (!isCompleted) {
+        btn.onclick = () => startSet(i, key, start, end);
+      }
+
+      menuGrid.appendChild(btn);
+    }
+  }
+
+  function startSet(idx, key, start, end) {
+    currentSetKey = key;
+
+    const saved = JSON.parse(localStorage.getItem(key) || "null");
+
+    if (saved) {
+      currentQuestions = saved.currentQuestions;
+      currentIndex = saved.currentIndex;
+      solvedIndex = saved.solvedIndex;
+      userAnswers = saved.userAnswers || {};
+      stats = saved.stats || { correct: 0, wrong: 0 };
+    } else {
+      currentQuestions = questions.slice(start, end).map((q, i) => normalizeQuestion(q, start + i));
+      currentIndex = 0;
+      solvedIndex = -1;
+      userAnswers = {};
+      stats = { correct: 0, wrong: 0 };
+      saveState();
+    }
+
+    document.getElementById("menuContainer").style.display = "none";
+    document.getElementById("quizContainer").style.display = "block";
+    document.getElementById("headerSubject").textContent = CURRENT_SUBJECT;
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function getQuestionTitle(q) {
+    return `Soru-${q.originalNo}: ${q.q}`;
+  }
+
+  function loadQuestion() {
+    const q = currentQuestions[currentIndex];
+    const progress = ((currentIndex + 1) / currentQuestions.length) * 100;
+
+    document.getElementById("progressBar").style.width = progress + "%";
+    document.getElementById("footerLeft").textContent = `Kalan: ${Math.max(currentQuestions.length - (currentIndex + 1), 0)}`;
+    document.getElementById("footerRight").textContent = `${currentIndex + 1} / ${currentQuestions.length}`;
+    document.getElementById("questionText").textContent = getQuestionTitle(q);
+
+    const retryBadge = document.getElementById("retryBadge");
+    retryBadge.style.display = q.isRetry ? "block" : "none";
+
+    const optArea = document.getElementById("optionsArea");
+    const expArea = document.getElementById("explanationArea");
+    optArea.innerHTML = "";
+    expArea.style.display = "none";
+    expArea.innerHTML = "";
+
+    const letters = ["A", "B", "C", "D"];
+
+    q.o.forEach((opt, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.innerHTML = `<strong>${letters[idx]})</strong> ${opt}`;
+
+      if (currentIndex <= solvedIndex) {
+        btn.disabled = true;
+        const userChoice = userAnswers[currentIndex];
+
+        if (idx === userChoice) {
+          if (userChoice === q.c) {
+            btn.classList.add("correct");
+            btn.innerHTML += ` <span class="tick show">✔</span>`;
+          } else {
+            btn.classList.add("wrong");
+          }
+        }
+
+        if (userChoice === q.c) {
+          expArea.innerHTML = `<strong>Açıklama:</strong> ${q.e}`;
+          expArea.style.display = "block";
+        } else if (q.isRetry) {
+          if (idx === q.c) {
+            btn.classList.add("correct");
+            btn.innerHTML += ` <span class="tick show">✔</span>`;
+          }
+          expArea.innerHTML = `<strong>Açıklama:</strong> ${q.e}`;
+          expArea.style.display = "block";
+        }
+      } else {
+        btn.onclick = () => selectOption(idx);
+      }
+
+      optArea.appendChild(btn);
+    });
+
+    document.getElementById("prevBtn").style.visibility = currentIndex > 0 ? "visible" : "hidden";
+    document.getElementById("nextBtn").style.visibility = currentIndex <= solvedIndex ? "visible" : "hidden";
+  }
+
+  function selectOption(idx) {
+    const q = currentQuestions[currentIndex];
+    const isCorrect = idx === q.c;
+
+    userAnswers[currentIndex] = idx;
+    solvedIndex = Math.max(solvedIndex, currentIndex);
+
+    if (isCorrect) {
+      stats.correct++;
+      q.answeredCorrectly = true;
+    } else {
+      stats.wrong++;
+
+      if (!q.isRetry) {
+        const retryQuestion = {
+          ...q,
+          isRetry: true,
+          retryFrom: q.originalNo,
+          retryCount: 1
+        };
+
+        const insertIndex = Math.min(currentIndex + 6, currentQuestions.length);
+        currentQuestions.splice(insertIndex, 0, retryQuestion);
+      }
+    }
+
+    saveState();
+    loadQuestion();
+  }
+
+  function saveState() {
+    localStorage.setItem(currentSetKey, JSON.stringify({
+      currentQuestions,
+      currentIndex,
+      solvedIndex,
+      userAnswers,
+      stats
+    }));
+  }
+
+  function goForward() {
+    if (currentIndex < solvedIndex) {
+      currentIndex = solvedIndex + 1;
+    } else if (currentIndex < currentQuestions.length - 1) {
+      currentIndex++;
+    } else {
+      return showMenu();
+    }
+
+    saveState();
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function goBack() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      saveState();
+      loadQuestion();
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function showMenu() {
+    document.getElementById("quizContainer").style.display = "none";
+    document.getElementById("menuContainer").style.display = "block";
+    initMenu();
+    window.scrollTo(0, 0);
+  }
+
+  function clearAllStatistics() {
+    if (confirm("Tüm veriler sıfırlansın mı?")) {
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+      });
+      initMenu();
+    }
+  }
+
+  function resetCurrentSet() {
+    if (confirm("Bu deneme sıfırlansın mı?")) {
+      localStorage.removeItem(currentSetKey);
+      showMenu();
+    }
+  }
+
+  initMenu();
+</script>
+</body>
+</html>
